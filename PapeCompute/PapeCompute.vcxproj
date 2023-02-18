@@ -11,7 +11,7 @@
     </ProjectConfiguration>
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{16B13BB4-D82D-4AC1-8B40-C6BCCC99954B}</ProjectGuid>
+    <ProjectGuid>{86B76B95-10C9-484D-8C80-2F72C3154B15}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>D3D12HelloTexture</RootNamespace>
     <ProjectName>PapeCompute</ProjectName>
