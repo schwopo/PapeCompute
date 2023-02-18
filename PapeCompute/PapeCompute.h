@@ -61,7 +61,6 @@ private:
     ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
     ComPtr<ID3D12DescriptorHeap> m_srvHeap;
     ComPtr<ID3D12DescriptorHeap> m_uavHeap;
-    ComPtr<ID3D12RootSignature> m_computeRootSignature;
     ComPtr<ID3D12PipelineState> m_pipelineState;
     ComPtr<ID3D12PipelineState> m_pipelineStateCompute;
     ComPtr<ID3D12GraphicsCommandList> m_commandList; // also usable for compute
