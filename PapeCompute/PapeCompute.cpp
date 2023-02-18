@@ -265,14 +265,6 @@ void CPapeCompute::LoadAssets()
 
     // Create the vertex buffer.
     {
-        // Define the geometry for a triangle.
-        //Vertex triangleVertices[] =
-        //{
-        //    { { 0.0f, 0.25f * m_aspectRatio, 0.0f }, { 0.5f, 0.0f } },
-        //    { { 0.25f, -0.25f * m_aspectRatio, 0.0f }, { 1.0f, 1.0f } },
-        //    { { -0.25f, -0.25f * m_aspectRatio, 0.0f }, { 0.0f, 1.0f } }
-        //};
-
         Vertex quadVertices[] =
         {
             { {  1.0f,  1.0f, 1.0f }, { 1.0f, 1.0f } },
@@ -288,72 +280,24 @@ void CPapeCompute::LoadAssets()
         // recommended. Every time the GPU needs it, the upload heap will be marshalled 
         // over. Please read up on Default Heap usage. An upload heap is used here for 
         // code simplicity and because there are very few verts to actually transfer.
-        TIF(GetDevice()->GetD3D12Device()->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-            D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
-            D3D12_RESOURCE_STATE_GENERIC_READ,
-            nullptr,
-            IID_PPV_ARGS(&m_vertexBuffer)));
+        m_vertexBuffer = CResource::CreateBuffer(vertexBufferSize, EHeapType::Upload);
 
         // Copy the triangle data to the vertex buffer.
         UINT8* pVertexDataBegin;
         CD3DX12_RANGE readRange(0, 0);        // We do not intend to read from this resource on the CPU.
-        TIF(m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
+        TIF(m_vertexBuffer.GetD3D12Resource()->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin)));
         memcpy(pVertexDataBegin, quadVertices, sizeof(quadVertices));
-        m_vertexBuffer->Unmap(0, nullptr);
+        m_vertexBuffer.GetD3D12Resource()->Unmap(0, nullptr);
 
         // Initialize the vertex buffer view.
-        m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+        m_vertexBufferView.BufferLocation = m_vertexBuffer.GetD3D12Resource()->GetGPUVirtualAddress();
         m_vertexBufferView.StrideInBytes = sizeof(Vertex);
         m_vertexBufferView.SizeInBytes = vertexBufferSize;
     }
 
 	m_texture = CResource::Create2DTexture(m_textureWidth, m_textureHeight);
 	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.GetD3D12Resource().Get(), 0, 1);
-	CResource uploadTexture = CResource::CreateBuffer(uploadBufferSize, EHeapType::Upload);
-    // Note: ComPtr's are CPU objects but this resource needs to stay in scope until
-    // the command list that references it has finished executing on the GPU.
-    // We will flush the GPU at the end of this method to ensure the resource is not
-    // prematurely destroyed.
-		//ComPtr<ID3D12Resource> textureUploadHeap;
-
-    //// Create the texture.
-    //{
-    //    // Describe and create a Texture2D.
-    //    D3D12_RESOURCE_DESC textureDesc = {};
-    //    textureDesc.MipLevels = 1;
-    //    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    //    textureDesc.Width = m_textureWidth;
-    //    textureDesc.Height = m_textureHeight;
-    //    textureDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-    //    textureDesc.DepthOrArraySize = 1;
-    //    textureDesc.SampleDesc.Count = 1;
-    //    textureDesc.SampleDesc.Quality = 0;
-    //    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
-
-
-    //    TIF(GetDevice()->GetD3D12Device()->CreateCommittedResource(
-    //        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-    //        D3D12_HEAP_FLAG_NONE,
-    //        &textureDesc,
-    //        D3D12_RESOURCE_STATE_COPY_DEST,
-    //        nullptr,
-    //        IID_PPV_ARGS(&m_texture)));
-
-    //    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
-
-    //    // Create the GPU upload buffer.
-    //    TIF(GetDevice()->GetD3D12Device()->CreateCommittedResource(
-    //        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-    //        D3D12_HEAP_FLAG_NONE,
-    //        &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-    //        D3D12_RESOURCE_STATE_GENERIC_READ,
-    //        nullptr,
-    //        IID_PPV_ARGS(&textureUploadHeap)));
-
-        // Copy data to the intermediate upload heap and then schedule a copy 
-        // from the upload heap to the Texture2D.
+	CResource uploadTexture = CResource::CreateBuffer(uploadBufferSize, EHeapType::Upload); // Needs to stay in scope until we flush
     {
 
         std::vector<UINT8> texture = GenerateTextureData();
