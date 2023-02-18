@@ -10,9 +10,9 @@
 //*********************************************************
 
 #include "stdafx.h"
-#include "D3D12HelloTexture.h"
+#include "PapeCompute.h"
 
-D3D12HelloTexture::D3D12HelloTexture(UINT width, UINT height, std::wstring name) :
+CPapeCompute::CPapeCompute(UINT width, UINT height, std::wstring name) :
     DXSample(width, height, name),
     m_frameIndex(0),
     m_viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)),
@@ -25,14 +25,14 @@ D3D12HelloTexture::D3D12HelloTexture(UINT width, UINT height, std::wstring name)
 {
 }
 
-void D3D12HelloTexture::OnInit()
+void CPapeCompute::OnInit()
 {
     LoadPipeline();
     LoadAssets();
 }
 
 // Load the rendering pipeline dependencies.
-void D3D12HelloTexture::LoadPipeline()
+void CPapeCompute::LoadPipeline()
 {
     UINT dxgiFactoryFlags = 0;
 
@@ -154,7 +154,7 @@ void D3D12HelloTexture::LoadPipeline()
 }
 
 // Load the sample assets.
-void D3D12HelloTexture::LoadAssets()
+void CPapeCompute::LoadAssets()
 {
     // Create the root signature.
     {
@@ -435,7 +435,7 @@ void D3D12HelloTexture::LoadAssets()
 }
 
 // Generate a simple black and white checkerboard texture.
-std::vector<UINT8> D3D12HelloTexture::GenerateTextureData()
+std::vector<UINT8> CPapeCompute::GenerateTextureData()
 {
     const UINT rowPitch = m_textureWidth * TexturePixelSize;
     const UINT cellPitch = rowPitch >> 3;        // The width of a cell in the checkboard texture.
@@ -472,12 +472,12 @@ std::vector<UINT8> D3D12HelloTexture::GenerateTextureData()
 }
 
 // Update frame-based values.
-void D3D12HelloTexture::OnUpdate()
+void CPapeCompute::OnUpdate()
 {
 }
 
 // Render the scene.
-void D3D12HelloTexture::OnRender()
+void CPapeCompute::OnRender()
 {
     // Record all the commands we need to render the scene into the command list.
     PopulateCommandList();
@@ -492,7 +492,7 @@ void D3D12HelloTexture::OnRender()
     WaitForPreviousFrame();
 }
 
-void D3D12HelloTexture::OnDestroy()
+void CPapeCompute::OnDestroy()
 {
     // Ensure that the GPU is no longer referencing resources that are about to be
     // cleaned up by the destructor.
@@ -501,7 +501,7 @@ void D3D12HelloTexture::OnDestroy()
     CloseHandle(m_fenceEvent);
 }
 
-void D3D12HelloTexture::PopulateCommandList()
+void CPapeCompute::PopulateCommandList()
 {
     // Command list allocators can only be reset when the associated 
     // command lists have finished execution on the GPU; apps should use 
@@ -551,7 +551,7 @@ void D3D12HelloTexture::PopulateCommandList()
     ThrowIfFailed(m_commandList->Close());
 }
 
-void D3D12HelloTexture::WaitForPreviousFrame()
+void CPapeCompute::WaitForPreviousFrame()
 {
     // WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
     // This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
