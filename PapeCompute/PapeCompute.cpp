@@ -438,9 +438,9 @@ void CPapeCompute::PopulateCommandList()
     m_commandList->SetDescriptorHeaps(_countof(ppHeapsCompute), ppHeapsCompute);
     m_commandList->SetComputeRootSignature(m_rootSignatureCompute.Get());
     m_commandList->SetComputeRootDescriptorTable(0, m_uavHeap->GetGPUDescriptorHandleForHeapStart());
-    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+    m_texture.Transition(EResourceState::PixelShader, EResourceState::UnorderedAccess, m_commandList.Get());
     m_commandList->Dispatch(m_dispatchWidth, m_dispatchHeight, 1);
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+    m_texture.Transition(EResourceState::UnorderedAccess, EResourceState::PixelShader, m_commandList.Get());
 
     // Set necessary state.
     m_commandList->SetPipelineState(m_pipelineState.Get());
