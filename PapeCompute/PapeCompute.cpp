@@ -309,48 +309,53 @@ void CPapeCompute::LoadAssets()
         m_vertexBufferView.SizeInBytes = vertexBufferSize;
     }
 
+	m_texture = CResource::Create2DTexture(m_textureWidth, m_textureHeight);
+	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.GetD3D12Resource().Get(), 0, 1);
+	CResource uploadTexture = CResource::CreateBuffer(uploadBufferSize, EHeapType::Upload);
     // Note: ComPtr's are CPU objects but this resource needs to stay in scope until
     // the command list that references it has finished executing on the GPU.
     // We will flush the GPU at the end of this method to ensure the resource is not
     // prematurely destroyed.
-    ComPtr<ID3D12Resource> textureUploadHeap;
+		//ComPtr<ID3D12Resource> textureUploadHeap;
 
-    // Create the texture.
-    {
-        // Describe and create a Texture2D.
-        D3D12_RESOURCE_DESC textureDesc = {};
-        textureDesc.MipLevels = 1;
-        textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-        textureDesc.Width = m_textureWidth;
-        textureDesc.Height = m_textureHeight;
-        textureDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
-        textureDesc.DepthOrArraySize = 1;
-        textureDesc.SampleDesc.Count = 1;
-        textureDesc.SampleDesc.Quality = 0;
-        textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
+    //// Create the texture.
+    //{
+    //    // Describe and create a Texture2D.
+    //    D3D12_RESOURCE_DESC textureDesc = {};
+    //    textureDesc.MipLevels = 1;
+    //    textureDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+    //    textureDesc.Width = m_textureWidth;
+    //    textureDesc.Height = m_textureHeight;
+    //    textureDesc.Flags = D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS;
+    //    textureDesc.DepthOrArraySize = 1;
+    //    textureDesc.SampleDesc.Count = 1;
+    //    textureDesc.SampleDesc.Quality = 0;
+    //    textureDesc.Dimension = D3D12_RESOURCE_DIMENSION_TEXTURE2D;
 
 
-        TIF(GetDevice()->GetD3D12Device()->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
-            D3D12_HEAP_FLAG_NONE,
-            &textureDesc,
-            D3D12_RESOURCE_STATE_COPY_DEST,
-            nullptr,
-            IID_PPV_ARGS(&m_texture)));
+    //    TIF(GetDevice()->GetD3D12Device()->CreateCommittedResource(
+    //        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_DEFAULT),
+    //        D3D12_HEAP_FLAG_NONE,
+    //        &textureDesc,
+    //        D3D12_RESOURCE_STATE_COPY_DEST,
+    //        nullptr,
+    //        IID_PPV_ARGS(&m_texture)));
 
-        const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
+    //    const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.Get(), 0, 1);
 
-        // Create the GPU upload buffer.
-        TIF(GetDevice()->GetD3D12Device()->CreateCommittedResource(
-            &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
-            D3D12_HEAP_FLAG_NONE,
-            &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
-            D3D12_RESOURCE_STATE_GENERIC_READ,
-            nullptr,
-            IID_PPV_ARGS(&textureUploadHeap)));
+    //    // Create the GPU upload buffer.
+    //    TIF(GetDevice()->GetD3D12Device()->CreateCommittedResource(
+    //        &CD3DX12_HEAP_PROPERTIES(D3D12_HEAP_TYPE_UPLOAD),
+    //        D3D12_HEAP_FLAG_NONE,
+    //        &CD3DX12_RESOURCE_DESC::Buffer(uploadBufferSize),
+    //        D3D12_RESOURCE_STATE_GENERIC_READ,
+    //        nullptr,
+    //        IID_PPV_ARGS(&textureUploadHeap)));
 
         // Copy data to the intermediate upload heap and then schedule a copy 
         // from the upload heap to the Texture2D.
+    {
+
         std::vector<UINT8> texture = GenerateTextureData();
 
         D3D12_SUBRESOURCE_DATA textureData = {};
@@ -358,26 +363,27 @@ void CPapeCompute::LoadAssets()
         textureData.RowPitch = m_textureWidth * TexturePixelSize;
         textureData.SlicePitch = textureData.RowPitch * m_textureHeight;
 
-        UpdateSubresources(m_commandList.Get(), m_texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
-        m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+        m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_COMMON, D3D12_RESOURCE_STATE_COPY_DEST));
+        UpdateSubresources(m_commandList.Get(), m_texture.GetD3D12Resource().Get(), uploadTexture.GetD3D12Resource().Get(), 0, 0, 1, &textureData);
+        m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 
         // Describe and create a SRV for the texture.
         D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
         srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-        srvDesc.Format = textureDesc.Format;
+        srvDesc.Format = m_texture.GetD3D12Resource()->GetDesc().Format;
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = 1;
-        GetDevice()->GetD3D12Device()->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+        GetDevice()->GetD3D12Device()->CreateShaderResourceView(m_texture.GetD3D12Resource().Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
 
         // Create UAV as well so we can write from compute shader
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
-        uavDesc.Format = textureDesc.Format;
+        uavDesc.Format = m_texture.GetD3D12Resource()->GetDesc().Format;
         uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
         uavDesc.Texture2D.MipSlice = 0; // I guess
         uavDesc.Texture2D.PlaneSlice = 0; // I guess
             
-        GetDevice()->GetD3D12Device()->CreateShaderResourceView(m_texture.Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
-        GetDevice()->GetD3D12Device()->CreateUnorderedAccessView(m_texture.Get(), nullptr, &uavDesc, m_uavHeap->GetCPUDescriptorHandleForHeapStart());
+        GetDevice()->GetD3D12Device()->CreateShaderResourceView(m_texture.GetD3D12Resource().Get(),           &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+        GetDevice()->GetD3D12Device()->CreateUnorderedAccessView(m_texture.GetD3D12Resource().Get(), nullptr, &uavDesc, m_uavHeap->GetCPUDescriptorHandleForHeapStart());
 
     }
     
@@ -488,9 +494,9 @@ void CPapeCompute::PopulateCommandList()
     m_commandList->SetDescriptorHeaps(_countof(ppHeapsCompute), ppHeapsCompute);
     m_commandList->SetComputeRootSignature(m_rootSignatureCompute.Get());
     m_commandList->SetComputeRootDescriptorTable(0, m_uavHeap->GetGPUDescriptorHandleForHeapStart());
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
+    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE, D3D12_RESOURCE_STATE_UNORDERED_ACCESS));
     m_commandList->Dispatch(m_dispatchWidth, m_dispatchHeight, 1);
-	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
+	m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_texture.GetD3D12Resource().Get(), D3D12_RESOURCE_STATE_UNORDERED_ACCESS, D3D12_RESOURCE_STATE_PIXEL_SHADER_RESOURCE));
 
     // Set necessary state.
     m_commandList->SetPipelineState(m_pipelineState.Get());

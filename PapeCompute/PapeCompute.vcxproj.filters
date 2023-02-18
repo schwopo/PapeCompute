@@ -7,6 +7,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="stdafx.cpp" />
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Resource.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Win32Application.h" />
@@ -16,6 +17,7 @@
     <ClInclude Include="DXSampleHelper.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="Device.h" />
+    <ClInclude Include="Resource.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="shaders.hlsl" />

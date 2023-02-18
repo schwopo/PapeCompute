@@ -113,6 +113,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Device.h" />
+    <ClInclude Include="Resource.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="PapeCompute.h" />
     <ClInclude Include="d3dx12.h" />
@@ -122,6 +123,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="Resource.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="PapeCompute.cpp" />
     <ClCompile Include="DXSample.cpp" />

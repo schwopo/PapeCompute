@@ -12,6 +12,7 @@
 #pragma once
 
 #include "DXSample.h"
+#include "Resource.h"
 
 using namespace DirectX;
 
@@ -57,10 +58,10 @@ private:
     ComPtr<IDXGISwapChain3> m_swapChain;
     ComPtr<ID3D12RootSignature> m_rootSignature;
     ComPtr<ID3D12RootSignature> m_rootSignatureCompute;
-    ComPtr<ID3D12RootSignature> m_computeRootSignature;
     ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
     ComPtr<ID3D12DescriptorHeap> m_srvHeap;
     ComPtr<ID3D12DescriptorHeap> m_uavHeap;
+    ComPtr<ID3D12RootSignature> m_computeRootSignature;
     ComPtr<ID3D12PipelineState> m_pipelineState;
     ComPtr<ID3D12PipelineState> m_pipelineStateCompute;
     ComPtr<ID3D12GraphicsCommandList> m_commandList; // also usable for compute
@@ -70,7 +71,7 @@ private:
     // App resources.
     ComPtr<ID3D12Resource> m_vertexBuffer;
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
-    ComPtr<ID3D12Resource> m_texture;
+    CResource m_texture;
 
     // Synchronization objects.
     UINT m_frameIndex;
