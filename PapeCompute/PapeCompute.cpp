@@ -280,7 +280,7 @@ void CPapeCompute::LoadAssets()
         // recommended. Every time the GPU needs it, the upload heap will be marshalled 
         // over. Please read up on Default Heap usage. An upload heap is used here for 
         // code simplicity and because there are very few verts to actually transfer.
-        m_vertexBuffer = CResource::CreateBuffer(vertexBufferSize, EHeapType::Upload);
+        m_vertexBuffer = GetDevice()->CreateBuffer(vertexBufferSize, EHeapType::Upload);
 
         // Copy the triangle data to the vertex buffer.
         UINT8* pVertexDataBegin;
@@ -295,9 +295,9 @@ void CPapeCompute::LoadAssets()
         m_vertexBufferView.SizeInBytes = vertexBufferSize;
     }
 
-	m_texture = CResource::Create2DTexture(m_textureWidth, m_textureHeight);
+	m_texture = GetDevice()->Create2DTexture(m_textureWidth, m_textureHeight);
 	const UINT64 uploadBufferSize = GetRequiredIntermediateSize(m_texture.GetD3D12Resource().Get(), 0, 1);
-	CResource uploadTexture = CResource::CreateBuffer(uploadBufferSize, EHeapType::Upload); // Needs to stay in scope until we flush
+	CResource uploadTexture = GetDevice()->CreateBuffer(uploadBufferSize, EHeapType::Upload); // Needs to stay in scope until we flush
     {
 
         std::vector<UINT8> texture = GenerateTextureData();

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Resource.h"
+
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
 
@@ -16,7 +18,8 @@ public:
     ComPtr<ID3D12CommandAllocator> GetCommandAllocator() { return m_commandAllocator; }
     ComPtr<ID3D12CommandQueue> GetCommandQueue() { return m_commandQueue; };
 
-    
+    CResource CreateBuffer(UINT size, EHeapType heap = EHeapType::Default);
+    CResource Create2DTexture(UINT width, UINT height, EHeapType heap = EHeapType::Default, EResourceFlags flags = EResourceFlags::None, UINT mipLevels = 1);
 
 private:
     void GetHardwareAdapter( _In_ IDXGIFactory1* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter, bool requestHighPerformanceAdapter = false);

@@ -17,8 +17,11 @@ class CResource
 public:
 
     ComPtr<ID3D12Resource> GetD3D12Resource() { return m_resource; }
-    static CResource CreateBuffer(UINT size, EHeapType heap = EHeapType::Default);
-    static CResource Create2DTexture(UINT width, UINT height, EHeapType heap = EHeapType::Default, EResourceFlags flags = EResourceFlags::None, UINT mipLevels = 1);
+    void SetD3D12Resource(ComPtr<ID3D12Resource> resource) { m_resource = resource; }
+
+    static D3D12_HEAP_TYPE GetD3D12HeapType(EHeapType heap);
+    static D3D12_RESOURCE_FLAGS GetD3D12ResourceFlags(EResourceFlags flags);
+
 
 private:
     ComPtr<ID3D12Resource> m_resource;
