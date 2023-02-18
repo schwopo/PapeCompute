@@ -32,3 +32,9 @@
 #include <vector>
 #include <wrl.h>
 #include <shellapi.h>
+
+#include "DXSampleHelper.h"
+#include "Win32Application.h"
+
+using namespace DirectX;
+using Microsoft::WRL::ComPtr;

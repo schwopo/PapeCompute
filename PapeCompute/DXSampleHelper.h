@@ -36,7 +36,7 @@ private:
 
 #define SAFE_RELEASE(p) if (p) (p)->Release()
 
-inline void ThrowIfFailed(HRESULT hr)
+inline void TIF(HRESULT hr)
 {
     if (FAILED(hr))
     {
@@ -225,7 +225,7 @@ inline Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(
     {
         OutputDebugStringA((char*)errors->GetBufferPointer());
     }
-    ThrowIfFailed(hr);
+    TIF(hr);
 
     return byteCode;
 }

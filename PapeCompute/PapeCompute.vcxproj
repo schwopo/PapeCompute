@@ -112,6 +112,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="Device.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="PapeCompute.h" />
     <ClInclude Include="d3dx12.h" />
@@ -120,6 +121,7 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="Device.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="PapeCompute.cpp" />
     <ClCompile Include="DXSample.cpp" />
