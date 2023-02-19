@@ -1,10 +1,12 @@
 RWTexture2D<float4> target : register(u0);
 
-float4 gradientTop = float4( 1.0, 1.0, 1.0, 1.0 );
-float4 gradientBottom = float4( 1.0, 0.0, 1.0, 1.0 );
+static const float3 gradientTop = float3( 1.0, 0.0, 0.0 );
+static const float3 gradientBottom = float3( 0.0, 0.0, 0.0 );
+static const int maxDepth = 3;
 
 struct Material
 {
+	bool isReflective;
 	float3 ambient;
 	float3 diffuse;
 	float3 specular;
@@ -42,6 +44,12 @@ struct Sphere
 	}
 };
 
+float3 getDivergentColor(float3 rayDir)
+{
+	float mixValue = (rayDir.y + 1.0) / 2.0;
+	return lerp(gradientTop, gradientBottom, mixValue);
+}
+
 
 //float3 normalAtPoint(float3 p)
 //{
@@ -69,6 +77,7 @@ void main( uint3 DTid : SV_DispatchThreadID )
 	sphere.material.diffuse = float3(0.8, 0.2, 0.2);
 	sphere.material.specular = float3(1.0, 1.0, 1.0);
 	sphere.material.exponent = 16.0;
+	sphere.material.isReflective = true;
 
 	uint width, height;
 	target.GetDimensions(width, height);
@@ -79,26 +88,49 @@ void main( uint3 DTid : SV_DispatchThreadID )
 
 	float3 rayDir = float3(0.0, 0.0, 1.0);
 	float3 eyePoint = float3(0.0, 0.0, 0.0);
-	const float3 startPoint = eyePoint + float3(float2(-0.5, -0.5).xy + uv.xy, 0.0);
+	float3 startPoint = eyePoint + float3(float2(-0.5, -0.5).xy + uv.xy, 0.0);
 	float3 samplePoint = startPoint;
 	float3 localLightPosition = float3(0.0, 1.0, 0.5);
 	float step = 0.01;
 
 
-	for (int i = 0; i < 100; ++i)
+	for (int depth = 0; depth < maxDepth; ++depth)
 	{
-		if (sphere.sdf(samplePoint) < 0.0)
+		bool isDivergent = true;
+		for (int i = 0; i < 100; ++i)
 		{
-			outColor = sphere.material.evaluate(
-				normalize(eyePoint - sphere.position),
-				normalize(samplePoint - localLightPosition),
-				sphere.normal(samplePoint) );
+			if (sphere.sdf(samplePoint) < 0.0)
+			{
+				isDivergent = false;
 
-			break;
+				if (sphere.material.isReflective)
+				{
+					// Set up for next ray march iteration
+					startPoint = samplePoint;
+					rayDir = sphere.normal(samplePoint);
+					samplePoint += rayDir * step * 2.0;
+				}
+				else
+				{
+					// Compute local lighting model
+					outColor = sphere.material.evaluate(
+						normalize(eyePoint - sphere.position),
+						normalize(samplePoint - localLightPosition),
+						sphere.normal(samplePoint) );
+				}
+
+				break;
+			}
+			else
+			{
+				samplePoint += rayDir * step;
+			}
 		}
-		else
+
+		if (isDivergent)
 		{
-			samplePoint += rayDir * step;
+			outColor = getDivergentColor(rayDir);
+			break;
 		}
 	}
 
