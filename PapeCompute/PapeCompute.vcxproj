@@ -116,6 +116,7 @@
     <ClInclude Include="FullScreenTexturePass.h" />
     <ClInclude Include="RenderResources.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SwapChain.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="PapeCompute.h" />
     <ClInclude Include="d3dx12.h" />
@@ -128,6 +129,7 @@
     <ClCompile Include="FullScreenTexturePass.cpp" />
     <ClCompile Include="RenderResources.cpp" />
     <ClCompile Include="Resource.cpp" />
+    <ClCompile Include="SwapChain.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="PapeCompute.cpp" />
     <ClCompile Include="DXSample.cpp" />

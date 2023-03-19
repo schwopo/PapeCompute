@@ -10,6 +10,7 @@
     <ClCompile Include="Resource.cpp" />
     <ClCompile Include="FullScreenTexturePass.cpp" />
     <ClCompile Include="RenderResources.cpp" />
+    <ClCompile Include="SwapChain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Win32Application.h" />
@@ -22,6 +23,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="FullScreenTexturePass.h" />
     <ClInclude Include="RenderResources.h" />
+    <ClInclude Include="SwapChain.h" />
   </ItemGroup>
   <ItemGroup>
     <CustomBuild Include="shaders.hlsl" />

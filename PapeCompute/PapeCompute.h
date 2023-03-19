@@ -54,11 +54,9 @@ private:
     // Pipeline objects.
     CD3DX12_VIEWPORT m_viewport;
     CD3DX12_RECT m_scissorRect;
-    CResource m_renderTargets[FrameCount];
-    ComPtr<IDXGISwapChain3> m_swapChain;
+
     ComPtr<ID3D12RootSignature> m_rootSignature;
     ComPtr<ID3D12RootSignature> m_rootSignatureCompute;
-    ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
     ComPtr<ID3D12DescriptorHeap> m_srvHeap;
     ComPtr<ID3D12DescriptorHeap> m_uavHeap;
     ComPtr<ID3D12PipelineState> m_pipelineState;
@@ -72,15 +70,9 @@ private:
     CResource m_texture;
     CResource m_vertexBuffer;
 
-    // Synchronization objects.
-    UINT m_frameIndex;
-    HANDLE m_fenceEvent;
-    ComPtr<ID3D12Fence> m_fence;
-    UINT64 m_fenceValue;
 
     void LoadPipeline();
     void LoadAssets();
     std::vector<UINT8> GenerateTextureData();
     void PopulateCommandList();
-    void WaitForPreviousFrame();
 };

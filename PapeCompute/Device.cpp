@@ -47,6 +47,21 @@ void CDevice::OnInit()
 
     TIF(m_device->CreateCommandQueue(&queueDesc, IID_PPV_ARGS(&m_commandQueue)));
     TIF(m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator)));
+
+	m_rtvDescriptorSize = GetDevice()->GetD3D12Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
+	m_uavDescriptorSize = GetDevice()->GetD3D12Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+    // Create Fence
+	TIF(GetDevice()->GetD3D12Device()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
+	m_fenceValue = 1;
+
+	// Create an event handle to use for frame synchronization.
+	m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+	if (m_fenceEvent == nullptr)
+	{
+		TIF(HRESULT_FROM_WIN32(GetLastError()));
+	}
+
 }
 
 // Helper function for acquiring the first available hardware adapter that supports Direct3D 12.
@@ -171,4 +186,24 @@ ComPtr<ID3D12GraphicsCommandList> CDevice::CreateGraphicsCommandList()
     ComPtr<ID3D12GraphicsCommandList> commandList;
     TIF(GetDevice()->GetD3D12Device()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, GetDevice()->GetCommandAllocator().Get(), nullptr, IID_PPV_ARGS(&commandList)));
     return commandList;
+}
+
+void CDevice::FlushGpu()
+{
+    // Signal and increment the fence value.
+    const UINT64 fence = m_fenceValue;
+    TIF(GetDevice()->GetCommandQueue()->Signal(m_fence.Get(), fence));
+    m_fenceValue++;
+
+    // Wait until the previous frame is finished.
+    if (m_fence->GetCompletedValue() < fence)
+    {
+        TIF(m_fence->SetEventOnCompletion(fence, m_fenceEvent));
+        WaitForSingleObject(m_fenceEvent, INFINITE);
+    }
+}
+
+void CDevice::OnDestroy()
+{
+    CloseHandle(m_fenceEvent);
 }

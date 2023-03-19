@@ -12,17 +12,16 @@
 #include "stdafx.h"
 #include "PapeCompute.h"
 #include "Device.h"
+#include "SwapChain.h"
 
 CPapeCompute::CPapeCompute(UINT width, UINT height, std::wstring name) :
     DXSample(width, height, name),
-    m_frameIndex(0),
     m_viewport(0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height)),
     m_scissorRect(0, 0, static_cast<LONG>(width), static_cast<LONG>(height)),
     m_textureWidth(width),
     m_textureHeight(height),
     m_dispatchWidth(width),
-    m_dispatchHeight(height),
-    m_rtvDescriptorSize(0)
+    m_dispatchHeight(height)
 {
 }
 
@@ -36,6 +35,7 @@ void CPapeCompute::OnInit()
 void CPapeCompute::LoadPipeline()
 {
     GetDevice()->OnInit();
+
     UINT dxgiFactoryFlags = 0;
 
 #if defined(_DEBUG)
@@ -53,44 +53,10 @@ void CPapeCompute::LoadPipeline()
     }
 #endif
 
-    ComPtr<IDXGIFactory4> factory;
-    TIF(CreateDXGIFactory2(dxgiFactoryFlags, IID_PPV_ARGS(&factory)));
-
-    // Describe and create the swap chain.
-    DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
-    swapChainDesc.BufferCount = FrameCount;
-    swapChainDesc.Width = m_width;
-    swapChainDesc.Height = m_height;
-    swapChainDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
-    swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-    swapChainDesc.SampleDesc.Count = 1;
-
-    ComPtr<IDXGISwapChain1> swapChain;
-    TIF(factory->CreateSwapChainForHwnd(
-        GetDevice()->GetCommandQueue().Get(),        // Swap chain needs the queue so that it can force a flush on it.
-        Win32Application::GetHwnd(),
-        &swapChainDesc,
-        nullptr,
-        nullptr,
-        &swapChain
-        ));
-
-    // This sample does not support fullscreen transitions.
-    TIF(factory->MakeWindowAssociation(Win32Application::GetHwnd(), DXGI_MWA_NO_ALT_ENTER));
-
-    TIF(swapChain.As(&m_swapChain));
-    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
+    CSwapChain::GetInstance()->Init(m_width, m_height, dxgiFactoryFlags);
 
     // Create descriptor heaps.
     {
-        // Describe and create a render target view (RTV) descriptor heap.
-        D3D12_DESCRIPTOR_HEAP_DESC rtvHeapDesc = {};
-        rtvHeapDesc.NumDescriptors = FrameCount;
-        rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
-        rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
-        TIF(GetDevice()->GetD3D12Device()->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap)));
-
         // Describe and create a shader resource view (SRV) heap for the texture.
         D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
         srvHeapDesc.NumDescriptors = 1;
@@ -105,25 +71,7 @@ void CPapeCompute::LoadPipeline()
         uavHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
         TIF(GetDevice()->GetD3D12Device()->CreateDescriptorHeap(&uavHeapDesc, IID_PPV_ARGS(&m_uavHeap)));
 
-        m_rtvDescriptorSize = GetDevice()->GetD3D12Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
-        m_uavDescriptorSize = GetDevice()->GetD3D12Device()->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
     }
-
-    // Create frame resources.
-    {
-        CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart());
-
-        // Create a RTV for each frame.
-        for (UINT n = 0; n < FrameCount; n++)
-        {
-            ComPtr <ID3D12Resource> backBuffer;
-            TIF(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&backBuffer)));
-            GetDevice()->GetD3D12Device()->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
-            m_renderTargets[n].SetD3D12Resource(backBuffer);
-            rtvHandle.Offset(1, m_rtvDescriptorSize);
-        }
-    }
-
 }
 
 // Load the sample assets.
@@ -340,20 +288,16 @@ void CPapeCompute::LoadAssets()
 
     // Create synchronization objects and wait until assets have been uploaded to the GPU.
     {
-        TIF(GetDevice()->GetD3D12Device()->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence)));
-        m_fenceValue = 1;
-
-        // Create an event handle to use for frame synchronization.
-        m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
-        if (m_fenceEvent == nullptr)
-        {
-            TIF(HRESULT_FROM_WIN32(GetLastError()));
-        }
 
         // Wait for the command list to execute; we are reusing the same command 
         // list in our main loop but for now, we just want to wait for setup to 
         // complete before continuing.
-        WaitForPreviousFrame();
+
+        // what if we don't
+
+
+        //WaitForPreviousFrame();
+        GetDevice()->FlushGpu();
     }
 }
 
@@ -408,20 +352,15 @@ void CPapeCompute::OnRender()
     // Execute the command list.
     ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
     GetDevice()->GetCommandQueue()->ExecuteCommandLists(_countof(ppCommandLists), ppCommandLists);
-
-    // Present the frame.
-    TIF(m_swapChain->Present(1, 0));
-
-    WaitForPreviousFrame();
+    GetSwapChain()->Present();
 }
 
 void CPapeCompute::OnDestroy()
 {
     // Ensure that the GPU is no longer referencing resources that are about to be
     // cleaned up by the destructor.
-    WaitForPreviousFrame();
-
-    CloseHandle(m_fenceEvent);
+    //WaitForPreviousFrame();
+    GetDevice()->FlushGpu();
 }
 
 void CPapeCompute::PopulateCommandList()
@@ -456,42 +395,19 @@ void CPapeCompute::PopulateCommandList()
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
     // Indicate that the back buffer will be used as a render target.
-    m_renderTargets[m_frameIndex].Transition(EResourceState::Present, EResourceState::RenderTarget, m_commandList.Get());
+    GetSwapChain()->GetBackBuffer().Transition(EResourceState::Present, EResourceState::RenderTarget, m_commandList.Get());
 
-    CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
-    m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+    m_commandList->OMSetRenderTargets(1, &GetSwapChain()->GetBackBufferView(), FALSE, nullptr);
 
     // Record commands.
     const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-    m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+    m_commandList->ClearRenderTargetView(GetSwapChain()->GetBackBufferView(), clearColor, 0, nullptr);
     m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
     m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
     m_commandList->DrawInstanced(4, 1, 0, 0);
 
     // Indicate that the back buffer will now be used to present.
-    m_renderTargets[m_frameIndex].Transition(EResourceState::RenderTarget, EResourceState::Present, m_commandList.Get());
+    GetSwapChain()->GetBackBuffer().Transition(EResourceState::RenderTarget, EResourceState::Present, m_commandList.Get());
 
     TIF(m_commandList->Close());
-}
-
-void CPapeCompute::WaitForPreviousFrame()
-{
-    // WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-    // This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
-    // sample illustrates how to use fences for efficient resource usage and to
-    // maximize GPU utilization.
-
-    // Signal and increment the fence value.
-    const UINT64 fence = m_fenceValue;
-    TIF(GetDevice()->GetCommandQueue()->Signal(m_fence.Get(), fence));
-    m_fenceValue++;
-
-    // Wait until the previous frame is finished.
-    if (m_fence->GetCompletedValue() < fence)
-    {
-        TIF(m_fence->SetEventOnCompletion(fence, m_fenceEvent));
-        WaitForSingleObject(m_fenceEvent, INFINITE);
-    }
-
-    m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
 }
