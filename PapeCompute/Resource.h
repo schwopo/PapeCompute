@@ -48,7 +48,7 @@ class CResource
 {
 public:
 
-    ComPtr<ID3D12Resource> GetD3D12Resource() { return m_resource; }
+    ComPtr<ID3D12Resource> GetD3D12Resource() const { return m_resource; }
     void SetD3D12Resource(ComPtr<ID3D12Resource> resource) { m_resource = resource; }
 
     void Transition(EResourceState beforeState, EResourceState afterState, ID3D12GraphicsCommandList* commandList);

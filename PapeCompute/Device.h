@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Resource.h"
+#include "DescriptorBumpAllocator.h"
 
 using namespace DirectX;
 using Microsoft::WRL::ComPtr;
@@ -17,6 +18,7 @@ public:
     ComPtr<ID3D12Device> GetD3D12Device() { return m_device; }
     ComPtr<ID3D12CommandAllocator> GetCommandAllocator() { return m_commandAllocator; }
     ComPtr<ID3D12CommandQueue> GetCommandQueue() { return m_commandQueue; };
+    CDescriptorBumpAllocator& GetDescriptorHeap() { return m_descriptorHeap; };
 
     UINT GetRtvDescriptorSize() { return m_rtvDescriptorSize; }
     UINT GetUavDescriptorSize() { return m_uavDescriptorSize; }
@@ -33,6 +35,8 @@ private:
     ComPtr<ID3D12Device> m_device;
     ComPtr<ID3D12CommandAllocator> m_commandAllocator;
     ComPtr<ID3D12CommandQueue> m_commandQueue;
+
+    CDescriptorBumpAllocator m_descriptorHeap;
 
     // Synchronization objects.
     HANDLE m_fenceEvent;

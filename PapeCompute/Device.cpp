@@ -62,6 +62,7 @@ void CDevice::OnInit()
 		TIF(HRESULT_FROM_WIN32(GetLastError()));
 	}
 
+    m_descriptorHeap.Init(10000);
 }
 
 // Helper function for acquiring the first available hardware adapter that supports Direct3D 12.

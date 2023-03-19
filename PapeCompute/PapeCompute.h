@@ -57,13 +57,14 @@ private:
 
     ComPtr<ID3D12RootSignature> m_rootSignature;
     ComPtr<ID3D12RootSignature> m_rootSignatureCompute;
-    ComPtr<ID3D12DescriptorHeap> m_srvHeap;
-    ComPtr<ID3D12DescriptorHeap> m_uavHeap;
     ComPtr<ID3D12PipelineState> m_pipelineState;
     ComPtr<ID3D12PipelineState> m_pipelineStateCompute;
     ComPtr<ID3D12GraphicsCommandList> m_commandList; // also usable for compute
     UINT m_rtvDescriptorSize; // Descriptor offsets, not size of heap
     UINT m_uavDescriptorSize;
+
+    int m_textureSrvHeapIndex = 0;
+    int m_textureUavHeapIndex = 0;
 
     // App resources.
     D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;

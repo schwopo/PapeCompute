@@ -54,24 +54,6 @@ void CPapeCompute::LoadPipeline()
 #endif
 
     CSwapChain::GetInstance()->Init(m_width, m_height, dxgiFactoryFlags);
-
-    // Create descriptor heaps.
-    {
-        // Describe and create a shader resource view (SRV) heap for the texture.
-        D3D12_DESCRIPTOR_HEAP_DESC srvHeapDesc = {};
-        srvHeapDesc.NumDescriptors = 1;
-        srvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        srvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-        TIF(GetDevice()->GetD3D12Device()->CreateDescriptorHeap(&srvHeapDesc, IID_PPV_ARGS(&m_srvHeap)));
-
-        // Describe and create a UAV desc heap
-        D3D12_DESCRIPTOR_HEAP_DESC uavHeapDesc = {};
-        uavHeapDesc.NumDescriptors = 1;
-        uavHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
-        uavHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
-        TIF(GetDevice()->GetD3D12Device()->CreateDescriptorHeap(&uavHeapDesc, IID_PPV_ARGS(&m_uavHeap)));
-
-    }
 }
 
 // Load the sample assets.
@@ -267,7 +249,7 @@ void CPapeCompute::LoadAssets()
         srvDesc.Format = m_texture.GetD3D12Resource()->GetDesc().Format;
         srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
         srvDesc.Texture2D.MipLevels = 1;
-        GetDevice()->GetD3D12Device()->CreateShaderResourceView(m_texture.GetD3D12Resource().Get(), &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
+        m_textureSrvHeapIndex = GetDevice()->GetDescriptorHeap().Insert(m_texture, srvDesc);
 
         // Create UAV as well so we can write from compute shader
         D3D12_UNORDERED_ACCESS_VIEW_DESC uavDesc = {};
@@ -275,10 +257,7 @@ void CPapeCompute::LoadAssets()
         uavDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
         uavDesc.Texture2D.MipSlice = 0; // I guess
         uavDesc.Texture2D.PlaneSlice = 0; // I guess
-            
-        GetDevice()->GetD3D12Device()->CreateShaderResourceView(m_texture.GetD3D12Resource().Get(),           &srvDesc, m_srvHeap->GetCPUDescriptorHandleForHeapStart());
-        GetDevice()->GetD3D12Device()->CreateUnorderedAccessView(m_texture.GetD3D12Resource().Get(), nullptr, &uavDesc, m_uavHeap->GetCPUDescriptorHandleForHeapStart());
-
+        m_textureUavHeapIndex = GetDevice()->GetDescriptorHeap().Insert(m_texture, uavDesc);
     }
     
     // Close the command list and execute it to begin the initial GPU setup.
@@ -375,10 +354,10 @@ void CPapeCompute::PopulateCommandList()
     // re-recording.
 
     TIF(m_commandList->Reset(GetDevice()->GetCommandAllocator().Get(), m_pipelineStateCompute.Get()));
-    ID3D12DescriptorHeap* ppHeapsCompute[] = { m_uavHeap.Get() };
+    ID3D12DescriptorHeap* ppHeapsCompute[] = { GetDevice()->GetDescriptorHeap().GetHeap()};
     m_commandList->SetDescriptorHeaps(_countof(ppHeapsCompute), ppHeapsCompute);
     m_commandList->SetComputeRootSignature(m_rootSignatureCompute.Get());
-    m_commandList->SetComputeRootDescriptorTable(0, m_uavHeap->GetGPUDescriptorHandleForHeapStart());
+    m_commandList->SetComputeRootDescriptorTable(0, GetDevice()->GetDescriptorHeap().GetGpuHandle(m_textureUavHeapIndex));
     m_texture.Transition(EResourceState::PixelShader, EResourceState::UnorderedAccess, m_commandList.Get());
     m_commandList->Dispatch(m_dispatchWidth, m_dispatchHeight, 1);
     m_texture.Transition(EResourceState::UnorderedAccess, EResourceState::PixelShader, m_commandList.Get());
@@ -387,10 +366,10 @@ void CPapeCompute::PopulateCommandList()
     m_commandList->SetPipelineState(m_pipelineState.Get());
     m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
 
-    ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
+    ID3D12DescriptorHeap* ppHeaps[] = { GetDevice()->GetDescriptorHeap().GetHeap()};
     m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
-    m_commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+    m_commandList->SetGraphicsRootDescriptorTable(0, GetDevice()->GetDescriptorHeap().GetGpuHandle(m_textureSrvHeapIndex));
     m_commandList->RSSetViewports(1, &m_viewport);
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
