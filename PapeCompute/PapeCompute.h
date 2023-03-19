@@ -54,7 +54,7 @@ private:
     // Pipeline objects.
     CD3DX12_VIEWPORT m_viewport;
     CD3DX12_RECT m_scissorRect;
-    ComPtr<ID3D12Resource> m_renderTargets[FrameCount];
+    CResource m_renderTargets[FrameCount];
     ComPtr<IDXGISwapChain3> m_swapChain;
     ComPtr<ID3D12RootSignature> m_rootSignature;
     ComPtr<ID3D12RootSignature> m_rootSignatureCompute;

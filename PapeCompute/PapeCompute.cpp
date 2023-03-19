@@ -116,8 +116,10 @@ void CPapeCompute::LoadPipeline()
         // Create a RTV for each frame.
         for (UINT n = 0; n < FrameCount; n++)
         {
-            TIF(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&m_renderTargets[n])));
-            GetDevice()->GetD3D12Device()->CreateRenderTargetView(m_renderTargets[n].Get(), nullptr, rtvHandle);
+            ComPtr <ID3D12Resource> backBuffer;
+            TIF(m_swapChain->GetBuffer(n, IID_PPV_ARGS(&backBuffer)));
+            GetDevice()->GetD3D12Device()->CreateRenderTargetView(backBuffer.Get(), nullptr, rtvHandle);
+            m_renderTargets[n].SetD3D12Resource(backBuffer);
             rtvHandle.Offset(1, m_rtvDescriptorSize);
         }
     }
@@ -454,7 +456,7 @@ void CPapeCompute::PopulateCommandList()
     m_commandList->RSSetScissorRects(1, &m_scissorRect);
 
     // Indicate that the back buffer will be used as a render target.
-    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    m_renderTargets[m_frameIndex].Transition(EResourceState::Present, EResourceState::RenderTarget, m_commandList.Get());
 
     CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
     m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
@@ -467,7 +469,7 @@ void CPapeCompute::PopulateCommandList()
     m_commandList->DrawInstanced(4, 1, 0, 0);
 
     // Indicate that the back buffer will now be used to present.
-    m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    m_renderTargets[m_frameIndex].Transition(EResourceState::RenderTarget, EResourceState::Present, m_commandList.Get());
 
     TIF(m_commandList->Close());
 }
