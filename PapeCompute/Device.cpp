@@ -157,7 +157,7 @@ CResource CDevice::Create2DTexture(UINT width, UINT height, EHeapType heap, ERes
 		&CD3DX12_HEAP_PROPERTIES(CResource::GetD3D12HeapType(heap)),
 		D3D12_HEAP_FLAG_NONE,
 		&textureDesc,
-		D3D12_RESOURCE_STATE_COPY_DEST,
+		D3D12_RESOURCE_STATE_COMMON,
 		nullptr,
 		IID_PPV_ARGS(&dxResource)));
 

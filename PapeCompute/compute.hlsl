@@ -4,6 +4,18 @@ static const float3 gradientTop = float3( 1.0, 0.0, 0.0 );
 static const float3 gradientBottom = float3( 0.0, 0.0, 0.0 );
 static const int maxDepth = 3;
 
+float noise(float r)
+{
+	return frac(19999.0 * sin(74742.0 * (r + 3883.03838)));
+}
+
+float noise(float3 v)
+{
+	float r = dot(v, float3(0.33332134, 0.9986777, 0.748882));
+	return noise(r);
+}
+
+
 struct Material
 {
 	bool isReflective;
@@ -27,57 +39,43 @@ struct Material
 	}
 };
 
-struct Sphere
-{
-	float3 position;
-	float radius;
-	Material material;
-
-	float sdf(float3 samplepoint)
-	{
-		return length(samplepoint - position) - radius;
-	}
-
-	float3 normal(float3 samplePoint)
-	{
-		return normalize(samplePoint - position);
-	}
-};
-
 float3 getDivergentColor(float3 rayDir)
 {
 	float mixValue = (rayDir.y + 1.0) / 2.0;
 	return lerp(gradientTop, gradientBottom, mixValue);
 }
 
+float sdf(float3 samplePoint)
+{
+	float radius = 0.3;
+	float3 position = float3(0.0, 0.0, 1.0);
+	float3 position2 = float3(1.2, 0.0, 1.0);
+	return min(
+		length(samplePoint - position) - radius
+		, length(samplePoint - position2) - radius);
+}
 
-//float3 normalAtPoint(float3 p)
-//{
-//	float epsilon = 0.001;
-//	float dx = sdf(p + float3(epsilon, 0.0, 0.0)) - sdf(p);
-//	float dy = sdf(p + float3(0.0, epsilon, 0.0)) - sdf(p);
-//	float dz = sdf(p + float3(0.0, 0.0, epsilon)) - sdf(p);
-//
-//	return normalize(float3(dx, dy, dz));
-//}
 
-//float4 colorAtPoint(float3 p)
-//{
-//	float3 eyeDir = float3(0.0, 0.0, -1.0);
-//	return dot(normalAtPoint(p), eyeDir);
-//}
+float3 normalAtPoint(float3 p)
+{
+	float epsilon = 0.001;
+	float dx = sdf(p + float3(epsilon, 0.0, 0.0)) - sdf(p);
+	float dy = sdf(p + float3(0.0, epsilon, 0.0)) - sdf(p);
+	float dz = sdf(p + float3(0.0, 0.0, epsilon)) - sdf(p);
+
+	return normalize(float3(dx, dy, dz));
+}
 
 [numthreads(1, 1, 1)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
-	Sphere sphere;
-	sphere.radius = 0.3;
-	sphere.position = float3(0.0, 0.0, 1.0);
-	sphere.material.ambient = float3(0.1, 0.0, 0.0);
-	sphere.material.diffuse = float3(0.8, 0.2, 0.2);
-	sphere.material.specular = float3(1.0, 1.0, 1.0);
-	sphere.material.exponent = 16.0;
-	sphere.material.isReflective = true;
+	Material material;
+
+	material.ambient = float3(0.1, 0.0, 0.0);
+	material.diffuse = float3(0.8, 0.2, 0.2);
+	material.specular = float3(1.0, 1.0, 1.0);
+	material.exponent = 16.0;
+	material.isReflective = true;
 
 	uint width, height;
 	target.GetDimensions(width, height);
@@ -99,24 +97,24 @@ void main( uint3 DTid : SV_DispatchThreadID )
 		bool isDivergent = true;
 		for (int i = 0; i < 100; ++i)
 		{
-			if (sphere.sdf(samplePoint) < 0.0)
+			if (sdf(samplePoint) < 0.0)
 			{
 				isDivergent = false;
 
-				if (sphere.material.isReflective)
+				if (material.isReflective)
 				{
 					// Set up for next ray march iteration
 					startPoint = samplePoint;
-					rayDir = sphere.normal(samplePoint);
+					rayDir = normalAtPoint(samplePoint);
 					samplePoint += rayDir * step * 2.0;
 				}
 				else
 				{
 					// Compute local lighting model
-					outColor = sphere.material.evaluate(
-						normalize(eyePoint - sphere.position),
+					outColor = material.evaluate(
+						normalize(eyePoint - samplePoint),
 						normalize(samplePoint - localLightPosition),
-						sphere.normal(samplePoint) );
+						normalAtPoint(samplePoint) );
 				}
 
 				break;
