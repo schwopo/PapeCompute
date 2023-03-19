@@ -113,6 +113,8 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="Device.h" />
+    <ClInclude Include="FullScreenTexturePass.h" />
+    <ClInclude Include="RenderResources.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Win32Application.h" />
     <ClInclude Include="PapeCompute.h" />
@@ -123,6 +125,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Device.cpp" />
+    <ClCompile Include="FullScreenTexturePass.cpp" />
+    <ClCompile Include="RenderResources.cpp" />
     <ClCompile Include="Resource.cpp" />
     <ClCompile Include="Win32Application.cpp" />
     <ClCompile Include="PapeCompute.cpp" />

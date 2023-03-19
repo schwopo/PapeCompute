@@ -165,3 +165,10 @@ CResource CDevice::Create2DTexture(UINT width, UINT height, EHeapType heap, ERes
     resource.SetD3D12Resource(dxResource);
     return resource;
 }
+
+ComPtr<ID3D12GraphicsCommandList> CDevice::CreateGraphicsCommandList()
+{
+    ComPtr<ID3D12GraphicsCommandList> commandList;
+    TIF(GetDevice()->GetD3D12Device()->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, GetDevice()->GetCommandAllocator().Get(), nullptr, IID_PPV_ARGS(&commandList)));
+    return commandList;
+}

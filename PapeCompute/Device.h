@@ -20,6 +20,7 @@ public:
 
     CResource CreateBuffer(UINT size, EHeapType heap = EHeapType::Default);
     CResource Create2DTexture(UINT width, UINT height, EHeapType heap = EHeapType::Default, EResourceFlags flags = EResourceFlags::None, UINT mipLevels = 1);
+    ComPtr<ID3D12GraphicsCommandList> CreateGraphicsCommandList();
 
 private:
     void GetHardwareAdapter( _In_ IDXGIFactory1* pFactory, _Outptr_result_maybenull_ IDXGIAdapter1** ppAdapter, bool requestHighPerformanceAdapter = false);
