@@ -13,6 +13,8 @@ struct Vertex
 void CFullScreenTexturePass::Init()
 {
     m_commandList = GetDevice()->CreateGraphicsCommandList();
+    TIF(m_commandList->Close());
+    m_descriptorHeap.Init(1);
 
     // Create the root signature.
     {
@@ -38,6 +40,11 @@ void CFullScreenTexturePass::Init()
         ComPtr<ID3DBlob> signature;
         ComPtr<ID3DBlob> error;
         TIF(D3DX12SerializeVersionedRootSignature(&rootSignatureDesc, featureData.HighestVersion, &signature, &error));
+		if (error)
+		{
+			MessageBoxA(NULL, (LPCSTR)error->GetBufferPointer(), "Error!", MB_OK | MB_TASKMODAL | MB_ICONWARNING);
+			std::exit(1);
+		}
         TIF(GetDevice()->GetD3D12Device()->CreateRootSignature(0, signature->GetBufferPointer(), signature->GetBufferSize(), IID_PPV_ARGS(&m_rootSignature)));
     }
 
@@ -139,7 +146,7 @@ void CFullScreenTexturePass::SetTexture(CResource* pTexture)
 	srvDesc.Format = pTexture->GetD3D12Resource()->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MipLevels = 1;
-    m_descriptorHeap.Update(1, *pTexture, srvDesc);
+    m_descriptorHeap.Update(0, *pTexture, srvDesc);
 }
 
 void CFullScreenTexturePass::Evaluate()
@@ -147,7 +154,6 @@ void CFullScreenTexturePass::Evaluate()
     TIF(m_commandList->Reset(GetDevice()->GetCommandAllocator().Get(), nullptr));
     m_commandList->SetPipelineState(m_pso.Get());
     m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-    m_pTexture->Transition(EResourceState::UnorderedAccess, EResourceState::PixelShader, m_commandList.Get());
 
     // Set necessary state.
 

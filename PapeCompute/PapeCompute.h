@@ -13,6 +13,7 @@
 
 #include "DXSample.h"
 #include "Resource.h"
+#include "FullScreenTexturePass.h"
 
 using namespace DirectX;
 
@@ -50,6 +51,9 @@ private:
         XMFLOAT3 position;
         XMFLOAT2 uv;
     };
+
+    // Render Passes
+    CFullScreenTexturePass m_presentScenePass;
 
     // Pipeline objects.
     CD3DX12_VIEWPORT m_viewport;

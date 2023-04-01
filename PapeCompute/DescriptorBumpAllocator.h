@@ -22,6 +22,6 @@ public:
 
 private:
     ComPtr<ID3D12DescriptorHeap> m_heap;
-    int m_head = 1; // use 0 as not present
+    int m_head = 0;
 };
 

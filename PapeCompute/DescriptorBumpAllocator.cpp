@@ -52,14 +52,14 @@ void CDescriptorBumpAllocator::Update(int idx, D3D12_CONSTANT_BUFFER_VIEW_DESC& 
 
 D3D12_GPU_DESCRIPTOR_HANDLE CDescriptorBumpAllocator::GetGpuHandle(int n)
 {
-	assert(n < m_head);
+	assert(n < m_head || n == 0);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE handle(m_heap->GetGPUDescriptorHandleForHeapStart(), n, GetDevice()->GetUavDescriptorSize());
 	return handle;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE CDescriptorBumpAllocator::GetCpuHandle(int n)
 {
-	assert(n < m_head);
+	assert(n < m_head || n == 0);
 	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_heap->GetCPUDescriptorHandleForHeapStart(), n, GetDevice()->GetUavDescriptorSize());
 	return handle;
 }
