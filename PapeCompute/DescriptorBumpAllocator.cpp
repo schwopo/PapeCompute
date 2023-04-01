@@ -32,6 +32,24 @@ int CDescriptorBumpAllocator::Insert(D3D12_CONSTANT_BUFFER_VIEW_DESC& cbvDesc)
     return m_head++;
 }
 
+void CDescriptorBumpAllocator::Update(int idx, const CResource& resource, D3D12_SHADER_RESOURCE_VIEW_DESC& srvDesc)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_heap->GetCPUDescriptorHandleForHeapStart(), idx, GetDevice()->GetUavDescriptorSize());
+	GetDevice()->GetD3D12Device()->CreateShaderResourceView(resource.GetD3D12Resource().Get(), &srvDesc, handle);
+}
+
+void CDescriptorBumpAllocator::Update(int idx, const CResource& resource, D3D12_UNORDERED_ACCESS_VIEW_DESC& uavDesc)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_heap->GetCPUDescriptorHandleForHeapStart(), idx, GetDevice()->GetUavDescriptorSize());
+	GetDevice()->GetD3D12Device()->CreateUnorderedAccessView(resource.GetD3D12Resource().Get(), nullptr, &uavDesc, handle);
+}
+
+void CDescriptorBumpAllocator::Update(int idx, D3D12_CONSTANT_BUFFER_VIEW_DESC& cbvDesc)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE handle(m_heap->GetCPUDescriptorHandleForHeapStart(), idx, GetDevice()->GetUavDescriptorSize());
+	GetDevice()->GetD3D12Device()->CreateConstantBufferView(&cbvDesc, handle);
+}
+
 D3D12_GPU_DESCRIPTOR_HANDLE CDescriptorBumpAllocator::GetGpuHandle(int n)
 {
 	assert(n < m_head);

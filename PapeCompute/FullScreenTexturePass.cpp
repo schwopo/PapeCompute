@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "Device.h"
+#include "SwapChain.h"
 #include "RenderResources.h"
 #include "FullScreenTexturePass.h"
 
@@ -129,41 +130,51 @@ void CFullScreenTexturePass::Init()
 
 void CFullScreenTexturePass::SetTexture(CResource* pTexture)
 {
+    assert(pTexture);
+
     m_pTexture = pTexture;
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = pTexture->GetD3D12Resource()->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MipLevels = 1;
+    m_descriptorHeap.Update(1, *pTexture, srvDesc);
 }
 
 void CFullScreenTexturePass::Evaluate()
 {
-    //TIF(m_commandList->Reset(GetDevice()->GetCommandAllocator().Get(), nullptr));
-    //m_commandList->SetPipelineState(m_pso.Get());
-    //m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
-    //m_pTexture->Transition(EResourceState::UnorderedAccess, EResourceState::PixelShader, m_commandList.Get());
+    TIF(m_commandList->Reset(GetDevice()->GetCommandAllocator().Get(), nullptr));
+    m_commandList->SetPipelineState(m_pso.Get());
+    m_commandList->SetGraphicsRootSignature(m_rootSignature.Get());
+    m_pTexture->Transition(EResourceState::UnorderedAccess, EResourceState::PixelShader, m_commandList.Get());
 
-    //// Set necessary state.
+    // Set necessary state.
 
-    //ID3D12DescriptorHeap* ppHeaps[] = { m_srvHeap.Get() };
-    //m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
+    ID3D12DescriptorHeap* ppHeaps[] = { m_descriptorHeap.GetHeap() };
+    m_commandList->SetDescriptorHeaps(_countof(ppHeaps), ppHeaps);
 
-    //m_commandList->SetGraphicsRootDescriptorTable(0, m_srvHeap->GetGPUDescriptorHandleForHeapStart());
+    m_commandList->SetGraphicsRootDescriptorTable(0, m_descriptorHeap.GetGpuHandle(0));
 
-    //m_commandList->RSSetViewports(1, &s_renderResources.viewport);
-    //m_commandList->RSSetScissorRects(1, &s_renderResources.m_scissorRect);
+    m_commandList->RSSetViewports(1, &s_renderResources.viewport);
+    m_commandList->RSSetScissorRects(1, &s_renderResources.scissorRect);
 
-    //// Indicate that the back buffer will be used as a render target.
-    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+    GetSwapChain()->GetBackBuffer().Transition(EResourceState::Present, EResourceState::RenderTarget, m_commandList.Get());
+    m_commandList->OMSetRenderTargets(1, &GetSwapChain()->GetBackBufferView(), FALSE, nullptr);
 
-    //CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
-    //m_commandList->OMSetRenderTargets(1, &rtvHandle, FALSE, nullptr);
+    // Record commands.
+    const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
+    m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+    m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
+    m_commandList->DrawInstanced(4, 1, 0, 0);
 
-    //// Record commands.
-    //const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-    //m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
-    //m_commandList->IASetPrimitiveTopology(D3D_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-    //m_commandList->IASetVertexBuffers(0, 1, &m_vertexBufferView);
-    //m_commandList->DrawInstanced(4, 1, 0, 0);
+    // Indicate that the back buffer will now be used to present.
+    GetSwapChain()->GetBackBuffer().Transition(EResourceState::RenderTarget, EResourceState::Present, m_commandList.Get());
 
-    //// Indicate that the back buffer will now be used to present.
-    //m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+    TIF(m_commandList->Close());
+}
 
-    //TIF(m_commandList->Close());
+ComPtr<ID3D12GraphicsCommandList> CFullScreenTexturePass::GetCommandList()
+{
+    return m_commandList;
 }
