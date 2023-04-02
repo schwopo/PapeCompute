@@ -24,6 +24,8 @@ CPapeCompute::CPapeCompute(UINT width, UINT height, std::wstring name) :
     m_dispatchWidth(width),
     m_dispatchHeight(height)
 {
+    s_renderResources.scissorRect = m_scissorRect;
+    s_renderResources.viewport = m_viewport;
 }
 
 void CPapeCompute::OnInit()
