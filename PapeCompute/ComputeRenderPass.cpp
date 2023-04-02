@@ -8,7 +8,7 @@ void CComputeRenderPass::Init()
 {
     m_commandList = GetDevice()->CreateGraphicsCommandList();
     TIF(m_commandList->Close());
-    m_descriptorHeap.Init(1);
+    m_descriptorHeap.Init(2);
 
     ComPtr<ID3DBlob> computeSignature;
     D3D12_ROOT_SIGNATURE_DESC computeSignatureDesc = {};
@@ -26,7 +26,14 @@ void CComputeRenderPass::Init()
     uavRanges.push_back(uavRange);
     uav.DescriptorTable.NumDescriptorRanges = uavRanges.size();
     uav.DescriptorTable.pDescriptorRanges = uavRanges.data();
-    computeParams.emplace_back(std::move(uav));
+    computeParams.push_back(uav);
+
+    D3D12_ROOT_PARAMETER renderParams = {};
+    renderParams.ParameterType = D3D12_ROOT_PARAMETER_TYPE_CBV;
+    renderParams.Descriptor.RegisterSpace = 0;
+    renderParams.Descriptor.ShaderRegister = 0;
+    computeParams.push_back(renderParams);
+
 
     computeSignatureDesc.NumParameters = computeParams.size();
     computeSignatureDesc.pParameters = computeParams.data();
@@ -70,6 +77,12 @@ void CComputeRenderPass::Init()
     psoComputeDesc.pRootSignature = m_rootSignature.Get();
     TIF(GetDevice()->GetD3D12Device()->CreateComputePipelineState(&psoComputeDesc, IID_PPV_ARGS(&m_pso)));
     m_commandList->SetName(L"ComputeRenderPass");
+
+    m_constantBuffer = GetDevice()->CreateBuffer(256, EHeapType::Upload);
+    D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+    cbvDesc.BufferLocation = m_constantBuffer.GetD3D12Resource()->GetGPUVirtualAddress();
+    cbvDesc.SizeInBytes = 256;
+    m_descriptorHeap.Insert(cbvDesc);
 }
 
 
@@ -85,6 +98,7 @@ void CComputeRenderPass::Evaluate()
     m_commandList->SetDescriptorHeaps(_countof(ppHeapsCompute), ppHeapsCompute);
     m_commandList->SetComputeRootSignature(m_rootSignature.Get());
     m_commandList->SetComputeRootDescriptorTable(0, m_descriptorHeap.GetGpuHandle());
+    m_commandList->SetComputeRootConstantBufferView(1, m_constantBuffer.GetD3D12Resource()->GetGPUVirtualAddress());
     m_pTargetTexture->Transition(EResourceState::PixelShader, EResourceState::UnorderedAccess, m_commandList.Get());
     m_commandList->Dispatch(dispatchWidth, dispatchHeight, 1);
     m_pTargetTexture->Transition(EResourceState::UnorderedAccess, EResourceState::PixelShader, m_commandList.Get());
@@ -103,6 +117,17 @@ void CComputeRenderPass::SetTargetTexture(CResource* pTargetTexture)
 	uavDesc.Texture2D.MipSlice = 0;
 	uavDesc.Texture2D.PlaneSlice = 0;
     m_descriptorHeap.Update(0, *m_pTargetTexture, uavDesc);
+}
+
+void CComputeRenderPass::SetRenderParams(SRenderParams& renderParams)
+{
+    D3D12_RANGE readRange;
+    readRange.Begin = 0;
+    readRange.End = 0;
+    void* data;
+    m_constantBuffer.GetD3D12Resource()->Map(0, &readRange, &data);
+    memcpy(data, &renderParams, sizeof(renderParams));
+    m_constantBuffer.GetD3D12Resource()->Unmap(0, nullptr);
 }
 
 ComPtr<ID3D12GraphicsCommandList> CComputeRenderPass::GetCommandList()

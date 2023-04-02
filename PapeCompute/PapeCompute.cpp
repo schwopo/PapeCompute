@@ -133,6 +133,12 @@ std::vector<UINT8> CPapeCompute::GenerateTextureData()
 // Update frame-based values.
 void CPapeCompute::OnUpdate()
 {
+    static float y = 0;
+    y += 0.01;
+    CComputeRenderPass::SRenderParams renderParams;
+    renderParams.eye = XMFLOAT4(0.0, y, 0.0, 0.0);
+    renderParams.target = XMFLOAT4(0.0, 0.0, 1.0, 0.0);
+    m_computeScenePass.SetRenderParams(renderParams);
 }
 
 // Render the scene.

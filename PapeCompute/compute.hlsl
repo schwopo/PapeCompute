@@ -1,5 +1,13 @@
 RWTexture2D<float4> target : register(u0);
 
+struct RenderParams
+{
+	float3 eye;
+	float3 target;
+};
+
+RenderParams renderParams : register(b0);
+
 static const float3 gradientTop = float3( 1.0, 0.0, 0.0 );
 static const float3 gradientBottom = float3( 0.0, 0.0, 0.0 );
 static const int maxDepth = 3;
@@ -97,9 +105,18 @@ void main( uint3 DTid : SV_DispatchThreadID )
 
 	float3 outColor = float3(0.1, 0.2, 0.2);
 
-	float3 rayDir = float3(0.0, 0.0, 1.0);
-	float3 eyePoint = float3(0.0, 0.0, 0.0);
-	float3 startPoint = eyePoint + float3(float2(-0.5, -0.5).xy + uv.xy, 0.0);
+	float3 eyePoint = renderParams.eye;
+	float3 targetPoint = renderParams.target;
+	float3 up = float3(0.0, 1.0, 0.0);
+	float3 lookDir = targetPoint - eyePoint; // this will lead to orthographic projection
+	float3 rayDir = lookDir;
+
+	float3 right = cross(up, lookDir); // might be inverted
+	float3 upward = cross(lookDir, right);
+
+	float2 offset = float2(-0.5, -0.5) + uv.xy;
+
+	float3 startPoint = eyePoint + offset.x * right + offset.y * upward;
 	float3 samplePoint = startPoint;
 	float3 localLightPosition = float3(0.0, 1.0, 0.5);
 	float step = 0.01;
