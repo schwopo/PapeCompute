@@ -45,14 +45,27 @@ float3 getDivergentColor(float3 rayDir)
 	return lerp(gradientTop, gradientBottom, mixValue);
 }
 
+float invSqDst(float3 v, float3 w)
+{
+	return 1.0 / sqrt(
+		pow(v.x - w.x, 2)
+		+ pow(v.y - w.y, 2)
+		+ pow(v.z - w.z, 2)
+	);
+}
+
 float sdf(float3 samplePoint)
 {
 	float radius = 0.3;
+	float threshold = 0.1;
 	float3 position = float3(0.0, 0.0, 1.0);
 	float3 position2 = float3(1.2, 0.0, 1.0);
-	return min(
-		length(samplePoint - position) - radius
-		, length(samplePoint - position2) - radius);
+
+	float pointBrightness = 0.0;
+	pointBrightness += invSqDst(samplePoint, position);
+	pointBrightness += invSqDst(samplePoint, position2);
+
+	return 3.0- (pointBrightness);
 }
 
 
