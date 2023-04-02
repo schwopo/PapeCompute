@@ -14,6 +14,7 @@
 #include "DXSample.h"
 #include "Resource.h"
 #include "FullScreenTexturePass.h"
+#include "ComputeRenderPass.h"
 
 using namespace DirectX;
 
@@ -53,6 +54,7 @@ private:
     };
 
     // Render Passes
+    CComputeRenderPass     m_computeScenePass;
     CFullScreenTexturePass m_presentScenePass;
 
     // Pipeline objects.
@@ -79,5 +81,4 @@ private:
     void LoadPipeline();
     void LoadAssets();
     std::vector<UINT8> GenerateTextureData();
-    void PopulateCommandList();
 };

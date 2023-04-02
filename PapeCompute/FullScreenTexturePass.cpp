@@ -133,6 +133,7 @@ void CFullScreenTexturePass::Init()
         m_vertexBufferView.StrideInBytes = sizeof(Vertex);
         m_vertexBufferView.SizeInBytes = vertexBufferSize;
     }
+    m_commandList->SetName(L"FullScreenTexturePass");
 }
 
 void CFullScreenTexturePass::SetTexture(CResource* pTexture)

@@ -112,6 +112,7 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="ComputeRenderPass.h" />
     <ClInclude Include="DescriptorBumpAllocator.h" />
     <ClInclude Include="Device.h" />
     <ClInclude Include="FullScreenTexturePass.h" />
@@ -126,6 +127,7 @@
     <ClInclude Include="stdafx.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ComputeRenderPass.cpp" />
     <ClCompile Include="DescriptorBumpAllocator.cpp" />
     <ClCompile Include="Device.cpp" />
     <ClCompile Include="FullScreenTexturePass.cpp" />
